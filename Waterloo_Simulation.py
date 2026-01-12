@@ -1,19 +1,19 @@
 import math 
 
-# --- Simulation Config ---
+# Simulation Params
 T = 0
 DT = 0.01
-X0, Y0 = 0.0, 50.0  # Match launch altitude in TERRAIN_POINTS
+X0, Y0 = 0.0, 50.0 
 
-# --- 9lb Projectile & Environment ---
+# 9lb Projectile & Environment
 M = 4.08    
 D = 0.102 
 AREA = math.pi * (D/2)**2 
 CD = 0.45 
 G = 9.81 
-RHO = 1.225 # Air density
+RHO = 1.225 
 V0 = 450.0 
-WIND_X, WIND_Y = 5.0, -1.0 # Downdraft included
+WIND_X, WIND_Y = 5.0, -1.0
 
 ANGLE_DEG = 10.0
 RADS = math.radians(ANGLE_DEG)
@@ -24,7 +24,7 @@ S = [X0, Y0, V0 * math.cos(RADS), V0 * math.sin(RADS)]
 def get_rates(state):
     x, y, vx, vy = state
 
-    # Relative velocity for drag calc
+    # Relative velocity for drag
     vx_rel = vx - WIND_X 
     vy_rel = vy - WIND_Y 
     v_mag = math.sqrt(vx_rel**2 + vy_rel**2)
@@ -54,12 +54,13 @@ def rk4_step(state, dt):
 
     new_state = []
     for i in range(4):
-        delta = (dt / 6) * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i])
-        new_state.append(state[i] + delta)
+        # Weighted average of slopes
+        slope = (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]) / 6
+        new_state.append(state[i] + slope * dt)
 
     return new_state
 
-# --- Terrain Logic ---
+# Waterloo Terrain Profile
 TERRAIN_POINTS = [
     (0.0, 50.0),    
     (500.0, 50.0),  
@@ -80,7 +81,7 @@ def get_terrain_height(x):
         
     return TERRAIN_POINTS[-1][1]
 
-# --- Main Loop ---
+# Main Sim Loop
 trajectory = [(X0, Y0)]
 
 while S[1] >= get_terrain_height(S[0]):
@@ -91,27 +92,36 @@ while S[1] >= get_terrain_height(S[0]):
     T += DT
     trajectory.append((S[0], S[1]))
 
-print(f"Range: {S[0]:.2f}m | Time: {T:.2f}s")
+# --- Results Output ---
+print("\n" + "="*35)
+print("      SIMULATION RESULTS")
+print("-" * 35)
+print(f"Launch Angle:   {ANGLE_DEG}°")
+print(f"Final Range:    {S[0]:.2f} m")
+print(f"Flight Time:    {T:.2f} s")
+print(f"Impact Height:  {S[1]:.2f} m")
+print(f"Muzzle Vel:     {V0} m/s")
+print("="*35 + "\n")
 
 # --- Visuals ---
 try:
     import matplotlib.pyplot as plt
 
     x_traj, y_traj = zip(*trajectory)
-    
-    # Dense terrain line for plot
     x_env = list(range(int(TERRAIN_POINTS[-1][0]) + 1))
     y_env = [get_terrain_height(x) for x in x_env]
     
     plt.figure(figsize=(10, 5))
-    plt.plot(x_env, y_env, 'g', label='Terrain')
-    plt.fill_between(x_env, y_env, color='g', alpha=0.2)
-    plt.plot(x_traj, y_traj, 'r--', label='Shot Path')
+    plt.plot(x_env, y_env, 'g', label='Waterloo Ridge', linewidth=2)
+    plt.fill_between(x_env, y_env, color='g', alpha=0.1)
+    plt.plot(x_traj, y_traj, 'r--', label='Shot Trajectory')
     
-    plt.title('9lb Cannonball Ballistics')
+    plt.title(f'9lb Cannonball Ballistics ({ANGLE_DEG} deg)')
+    plt.xlabel('Distance (m)')
+    plt.ylabel('Altitude (m)')
+    plt.grid(True, alpha=0.3)
     plt.legend()
-    plt.grid(True)
     plt.show()
 
 except ImportError:
-    print("Install matplotlib for plots.")
+    print("Matplotlib missing. Visuals skipped.")
