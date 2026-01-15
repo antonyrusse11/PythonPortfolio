@@ -1,118 +1,71 @@
-from IPython.display import clear_output 
+import os
 
-# roguelike Room Objects - write your code here
-
-#Take Room Dimensions
-width = int(input("Enter room width"))
-height = int(input("Enter room height"))
-
-#Initialise Room Class
-
+# Using a standard class for room management
 class Room:
-    
-    """
-    Represents a 2D room with defined dimensions and a user's location.
-    """    
-    def __init__(self, width, height):
-                
-        """
-        Initializes the Room object with a given width and height,
-        and sets the user's starting position (x, y) to (0, 0).
-        """
-    
-        #Define Room Size
-        self.width = width
-        self.height = height
+    def __init__(self, w, h):
+        self.width = w
+        self.height = h
+        # Start player at origin
+        self.px = 0
+        self.py = 0
+        self.last_msg = "Room initialized."
+
+    def display(self):
+        # Refresh the view - works for both Windows and Linux
+        os.system('cls' if os.name == 'nt' else 'clear')
         
-        # Define the user's current location (class variables x, y)
-        self.x = 0
-        self.y = 0
-    
-        #Initialise Draw Function Within Class    
-    
-    def draw(self):
-        
-        """
-        Clears the console and draws the room grid, marking the user's position.
-        """
-    
-        clear_output()
-        print(f"Current Room: {self.width}x{self.height} Grid")
-        print("-" * (self.width * 2 + 1)) #Border line
-    
-        #Outer loop iterates through rows (y-coordinate)
-        for y_coord in range(self.height):
-            row_output = "|"
-    
-            for x_coord in range(self.width):
-    
-                if x_coord == self.x and y_coord == self.y:
-                    row_output += "P"
-    
+        print(f"Room: {self.width}x{self.height} | Pos: ({self.px}, {self.py})")
+        print(f"Log: {self.last_msg}")
+        print("#" * (self.width + 2)) # Top wall
+
+        for y in range(self.height):
+            row = "#" # Left wall
+            for x in range(self.width):
+                if x == self.px and y == self.py:
+                    row += "@" # Player icon
                 else:
-                    # Print '.' for an empty space
-                    row_output += ". "
+                    row += "." # Empty floor
+            row += "#" # Right wall
+            print(row)
+
+        print("#" * (self.width + 2)) # Bottom wall
+
+    def move(self, dx, dy):
+        nx, ny = self.px + dx, self.py + dy
+        
+        # OOB check
+        if 0 <= nx < self.width and 0 <= ny < self.height:
+            self.px, self.py = nx, ny
+            self.last_msg = f"Moved to {nx}, {ny}"
+        else:
+            self.last_msg = "Blocked: Hit a wall."
+
+# Entry point
+def main():
+    try:
+        w = int(input("Width: "))
+        h = int(input("Height: "))
+        if w < 2 or h < 2: raise ValueError
+    except ValueError:
+        print("Invalid dimensions. Defaulting to 5x5.")
+        w, h = 5, 5
+
+    room = Room(w, h)
     
-            row_output += "|" # End of the row
-    
-            print(row_output)
-
-    #Left Check
-    def left(self):
-        new_x = self.x - 1
+    # Control loop
+    while True:
+        room.display()
+        cmd = input("Controls (WASD to move, Q to quit): ").lower()
         
-        # Check if the new X is still 0 or greater
-        if new_x >= 0:
-            self.x = new_x
-            # Optional: Update a status message for feedback
-            self.message = "Moved left."
+        if cmd == 'q':
+            print("Exiting...")
+            break
+        elif cmd == 'w': room.move(0, -1)
+        elif cmd == 'a': room.move(-1, 0)
+        elif cmd == 's': room.move(0, 1)
+        elif cmd == 'd': room.move(1, 0)
         else:
-            print("Movement blocked: Hit the west wall!")
+            room.last_msg = "Unknown command."
 
-        #Right Check
-    def right(self):
-        new_x = self.x + 1
-        
-        # Check if the new X is still 0 or greater
-        if new_x < self.width:
-            self.x = new_x
-            # Optional: Update a status message for feedback
-            self.message = "Moved right."
-        else:
-            print("Movement blocked: Hit the east wall!")
-
-    #Up Check
-    def up(self):
-            new_y = self.y - 1
-            
-            # Boundary Check: Check if the new Y is 0 or greater. (The top boundary)
-            if new_y >= 0:
-                self.y = new_y
-                self.message = "Moved up."
-            else:
-                print("Movement blocked: Hit the north wall!")
-
-    #Down Check
-    def down(self):
-        new_y = self.y + 1
-        
-        # Boundary Check: Check if the new Y is 0 or greater. (The top boundary)
-        if new_y < self.height:
-            self.y = new_y
-            self.message = "Moved down."
-        else:
-            print("Movement blocked: Hit the south wall!")
-        
-myRoom = Room(width,height)
-myRoom.draw()
-
-while True:
-    s = input()
-    if s=='a': myRoom.left()
-    if s=='s': myRoom.right()
-    if s=='q': myRoom.up()
-    if s=='z': myRoom.down()
-    if s=='x': 
-        print("all done")
-        break
-    myRoom.draw()
+if __name__ == "__main__":
+    main()
