@@ -1,65 +1,78 @@
 import os
 
-# Using a standard class for room management
+# Class to handle the 2D spatial environment and player state
 class Room:
     def __init__(self, w, h):
+        # Setting grid constraints based on user input
         self.width = w
         self.height = h
-        # Start player at origin
+        # Initialize player at top-left origin (0,0)
         self.px = 0
         self.py = 0
         self.last_msg = "Room initialized."
 
     def display(self):
-        # Refresh the view - works for both Windows and Linux
+        # Clears terminal to keep the UI from scrolling endlessly
         os.system('cls' if os.name == 'nt' else 'clear')
         
         print(f"Room: {self.width}x{self.height} | Pos: ({self.px}, {self.py})")
         print(f"Log: {self.last_msg}")
-        print("#" * (self.width + 2)) # Top wall
+        
+        # Draw the North wall using a simple string multiplier
+        print("#" * (self.width + 2)) 
 
+        # Rendering the floor matrix row by row
         for y in range(self.height):
-            row = "#" # Left wall
+            row = "#" # Start with West wall
             for x in range(self.width):
+                # Check if the current loop coordinates match player location
                 if x == self.px and y == self.py:
-                    row += "@" # Player icon
+                    row += "@" # Standard roguelike icon for player
                 else:
-                    row += "." # Empty floor
-            row += "#" # Right wall
+                    row += "." # Floor tile
+            row += "#" # End with East wall
             print(row)
 
-        print("#" * (self.width + 2)) # Bottom wall
+        # Draw the South wall
+        print("#" * (self.width + 2)) 
 
     def move(self, dx, dy):
+        # Calculate proposed next step before committing to state change
         nx, ny = self.px + dx, self.py + dy
         
-        # OOB check
+        # Out-of-bounds check: ensure new coordinates are within 0 and width/height
         if 0 <= nx < self.width and 0 <= ny < self.height:
             self.px, self.py = nx, ny
             self.last_msg = f"Moved to {nx}, {ny}"
         else:
+            # Rejection message if movement hits a boundary
             self.last_msg = "Blocked: Hit a wall."
 
-# Entry point
+# Script entry point logic
 def main():
     try:
+        # Collecting dimensions; using int() for raw numeric conversion
         w = int(input("Width: "))
         h = int(input("Height: "))
+        # Logic check: room must be at least 2x2 for movement to be possible
         if w < 2 or h < 2: raise ValueError
     except ValueError:
+        # Fallback to prevent crash on bad user input or strings
         print("Invalid dimensions. Defaulting to 5x5.")
         w, h = 5, 5
 
     room = Room(w, h)
     
-    # Control loop
+    # Infinite loop to handle real-time user commands until 'Q' is pressed
     while True:
         room.display()
+        # Capturing lowercase keys for WASD movement
         cmd = input("Controls (WASD to move, Q to quit): ").lower()
         
         if cmd == 'q':
             print("Exiting...")
             break
+        # Applying coordinate deltas for each direction
         elif cmd == 'w': room.move(0, -1)
         elif cmd == 'a': room.move(-1, 0)
         elif cmd == 's': room.move(0, 1)
